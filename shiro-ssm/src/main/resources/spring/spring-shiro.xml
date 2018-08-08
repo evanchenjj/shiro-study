@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd ">
+    <bean class="org.apache.shiro.spring.web.ShiroFilterFactoryBean" id="shiroFilter">
+        <property name="securityManager" ref="securityManager"/>
+        <property name="loginUrl" value="/login.jsp"/>
+        <property name="successUrl" value="/index.jsp"/>
+        <property name="unauthorizedUrl" value="unauthorizedUrl.jsp"/>
+        <!--<property name="filterChainDefinitions">
+            <value>
+                /index.jsp=anon
+                /login.jsp=anon
+                /register.jsp=anon
+                /user/register=anon
+                /user/subLogin=anon
+                /success.jsp=authc
+            </value>
+        </property>-->
+        <!--将权限数据库存储到数据库中管理-->
+        <!--实例工厂方法-->
+        <property name="filterChainDefinitionMap" ref="filterChainDefinitionMap"/>
+
+    </bean>
+    <!--实例工厂方法-->
+    <bean id="filterChainDefinitionMap" factory-bean="chainDefinitionMap" factory-method="getFilterChainDefinitionMapFactory"/>
+    <bean class="com.evancjj.shiro.factory.FilterChainDefinitionMap" id="chainDefinitionMap"/>
+
+    <!--web环境中只有用户退出才能知道session过期，索引开始session检查-->
+    <bean class="org.apache.shiro.session.mgt.ExecutorServiceSessionValidationScheduler">
+        <!--设置检查时间，单位毫秒-->
+        <property name="interval" value="300000"/>
+    </bean>
+
+    <!--开启shiro注解-->
+    <bean class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+    <bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+        <property name="securityManager" ref="securityManager"/>
+    </bean>
+
+    <!--配置securitymanager-->
+    <bean class="org.apache.shiro.web.mgt.DefaultWebSecurityManager" id="securityManager">
+        <property name="realm" ref="customRealm"/>
+        <property name="cacheManager" ref="cacheManager"/>
+        <property name="sessionManager" ref="defaultWebSessionManager"/>
+        <property name="rememberMeManager" ref="rememberMeManager"/>
+    </bean>
+    <!--自定义realm-->
+    <bean class="com.evancjj.shiro.realm.CustomRealm" id="customRealm">
+        <property name="credentialsMatcher" ref="hashedCredentialsMatcher"/>
+    </bean>
+
+
+    <!--配置凭证匹配器-->
+    <bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher" id="hashedCredentialsMatcher">
+        <property name="hashAlgorithmName" value="md5"/>
+        <property name="hashIterations" value="1"/>
+    </bean>
+
+    <!--自定义SessionDao-->
+    <bean class="com.evancjj.shiro.session.CustomSessionDao" id="customSessionDao"/>
+    <bean class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager" id="defaultWebSessionManager">
+        <property name="sessionDAO" ref="customSessionDao"/>
+    </bean>
+
+    <!--自定义cache-->
+    <bean class="com.evancjj.shiro.cache.CustomCacheManager" id="cacheManager"/>
+
+    <!--记住我-->
+    <bean class="org.apache.shiro.web.mgt.CookieRememberMeManager" id="rememberMeManager">
+        <property name="cookie" ref="simpleCookie"/>
+    </bean>
+    <bean class="org.apache.shiro.web.servlet.SimpleCookie" id="simpleCookie">
+        <property name="name" value="rememberMe"/>
+        <property name="maxAge" value="20000"/>
+    </bean>
+</beans>
